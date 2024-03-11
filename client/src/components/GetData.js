@@ -1,8 +1,8 @@
 // GetDataComponent.js
 import React, { useState, useEffect } from 'react';
 
-const GetDataComponent = () => {
-  const [data, setData] = useState(null);
+const GetData = () => {
+  const [data, setData] = useState('');
 
   useEffect(() => {
     // Fetch data from the '/api/getData' route
@@ -19,7 +19,7 @@ const GetDataComponent = () => {
 
   return (
     <div>
-      <h2>Get Data Component</h2>
+      <h2>Get Data</h2>
       {data && (
         <div>
           <h3>Fetched Data:</h3>
@@ -30,4 +30,4 @@ const GetDataComponent = () => {
   );
 };
 
-export default GetDataComponent;
+export default GetData;

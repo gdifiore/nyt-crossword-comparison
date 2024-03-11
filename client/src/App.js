@@ -1,7 +1,7 @@
 import React from 'react';
-import DataComponent from './components/DataComponent';
-import GetDataComponent from './components/GetDataComponent';
-import TimeInput from './components/TimeInputComponent';
+import Data from './components/Data';
+import GetData from './components/GetData';
+import TimeInput from './components/TimeInput';
 
 const App = () => {
   return (

@@ -1,10 +1,18 @@
 from flask import Flask, jsonify
-import os
 from flask_cors import CORS
+import os
+import psycopg2
 
 app = Flask(__name__, static_folder='client/build', static_url_path='/')
 
 CORS(app)
+
+def get_db_connection():
+    conn = psycopg2.connect(host='localhost',
+                            database=os.environ['DATABASE'],
+                            user=os.environ['DATABASE_USERNAME'],
+                            password=os.environ['DATABASE_PASSWORD'])
+    return conn
 
 # Flask API endpoint
 @app.route('/api/data')

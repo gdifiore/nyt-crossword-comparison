@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-const DataComponent = () => {
-  const [apiData, setApiData] = useState(null);
+const Data = () => {
+  const [apiData, setApiData] = useState('');
 
   useEffect(() => {
     // Fetch data from Flask API
@@ -29,4 +29,4 @@ const DataComponent = () => {
   );
 };
 
-export default DataComponent;
+export default Data;
