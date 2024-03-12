@@ -16,9 +16,24 @@ cur = conn.cursor()
 cur.execute('DROP TABLE IF EXISTS puzzle_completion;')
 cur.execute('CREATE TABLE puzzle_completion ('
                     'id SERIAL PRIMARY KEY,'
-                    'completion_time INTERVAL,'
+                    'completion_time_in_sec INT,'
                     'timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP);'
                 )
+
+cur.execute('INSERT INTO puzzle_completion (completion_time_in_sec)'
+            'VALUES (%s)',
+            (103,)
+            )
+'''
+postgresql to convert s to m:ss
+
+SELECT
+  completion_time_in_sec,
+  TO_CHAR((completion_time_in_sec / 60)::integer, 'FM999') || ':' || TO_CHAR(completion_time_in_sec % 60, 'FM00') AS formatted_time
+FROM
+  puzzle_completion;
+
+'''
 
 conn.commit()
 

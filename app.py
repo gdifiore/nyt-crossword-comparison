@@ -32,6 +32,20 @@ def not_found(error):
 # Serve React App
 @app.route('/')
 def index():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    sql_query = '''
+    SELECT
+      completion_time_in_sec,
+      TO_CHAR((completion_time_in_sec / 60)::integer, 'FM999') || ':' || TO_CHAR(completion_time_in_sec % 60, 'FM00') AS formatted_time
+    FROM
+      puzzle_completion;
+    '''
+    cur.execute(sql_query)
+    time = cur.fetchall()
+    print(time[0][1]) # stored in an array of tuples, we want to access the second elemnt
+    cur.close()
+    conn.close()
     return app.send_static_file('index.html')
 
 # Serve React build files in Flask
