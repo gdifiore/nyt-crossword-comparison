@@ -20,10 +20,10 @@ cur.execute('CREATE TABLE puzzle_completion ('
                     'timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP);'
                 )
 
-cur.execute('INSERT INTO puzzle_completion (completion_time_in_sec)'
-            'VALUES (%s)',
-            (103,)
-            )
+#cur.execute('INSERT INTO puzzle_completion (completion_time_in_sec)'
+#            'VALUES (%s)',
+#            (103,)
+#            )
 '''
 postgresql to convert s to m:ss
 

@@ -16,7 +16,27 @@ function TimeInput() {
   const handleVerify = () => {
     if (isValid) {
       console.log('Input is valid:', inputValue);
+
+      const [minutes, seconds] = inputValue.split(':');
+      const totalSeconds = parseInt(minutes) * 60 + parseInt(seconds);
+      console.log('Converted to seconds:', totalSeconds);
+
       // log to db
+      fetch('/api/data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ secondsToComplete: totalSeconds })
+      })
+        .then(response => response.json())
+        .then(data => {
+          // handle the response data
+          console.log('Response:', data);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
       // switch website state to prevent input
     } else {
       console.error('Invalid input:', inputValue);

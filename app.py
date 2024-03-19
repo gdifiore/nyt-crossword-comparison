@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 import psycopg2
@@ -15,23 +15,33 @@ def get_db_connection():
     return conn
 
 # Flask API endpoint
-@app.route('/api/data')
+@app.route('/api/data', methods=['GET', 'POST'])
 def get_data():
-    return {'data': 'Your data here'}
+    data = request.get_json()
+    print(data)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    sql_query = '''
+    INSERT INTO puzzle_completion (completion_time_in_sec)
+        VALUES (%s)
+    '''
+    cur.execute(sql_query, (data['secondsToComplete'],))
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({'message': 'Data received successfully'})
 
 # Returning JSON data from a Flask endpoint
-@app.route('/api/sendData')
+@app.route('/api/sendData', methods=['GET', 'POST'])
 def send_data():
     return jsonify({'message': 'Data sent successfully'})
 
-# Flask error handling
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({'error': 'Not found'}), 404
-
-# Serve React App
-@app.route('/')
-def index():
+# Print table contents for testing
+@app.route('/api/printDB', methods=['GET'])
+def print_db():
     conn = get_db_connection()
     cur = conn.cursor()
     sql_query = '''
@@ -46,6 +56,17 @@ def index():
     print(time[0][1]) # stored in an array of tuples, we want to access the second elemnt
     cur.close()
     conn.close()
+    return jsonify({'message': 'Printed database to terminal'})
+
+
+# Flask error handling
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Not found'}), 404
+
+# Serve React App
+@app.route('/')
+def index():
     return app.send_static_file('index.html')
 
 # Serve React build files in Flask
