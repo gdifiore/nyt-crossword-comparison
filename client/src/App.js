@@ -1,6 +1,5 @@
 import React from 'react';
-import Data from './components/Data';
-import GetData from './components/GetData';
+import PrintDB from './components/printData';
 import TimeInput from './components/TimeInput';
 
 const App = () => {
@@ -8,6 +7,7 @@ const App = () => {
     <div>
       <h1>Hello, React!</h1>
       <TimeInput />
+      <PrintDB />
     </div>
   );
 };

@@ -5,7 +5,7 @@
 
 - [ ] display data
 
-- [ ] clean up react app dependencies
+- [ ] switch react boilerplate
 
 # backend
 - [x] input data into db
