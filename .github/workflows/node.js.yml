@@ -16,11 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Change directory to /client
-        run: cd client
-
       - name: Install dependencies
+        working-directory: ./client
         run: yarn install
 
       - name: Build
+        working-directory: ./client
         run: yarn build
