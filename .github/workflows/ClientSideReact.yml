@@ -1,12 +1,12 @@
-name: Build
+name: Build ClientSideReact
 
 on:
   push:
     branches:
-      - main  # Adjust this according to your main branch name
+      - main
   pull_request:
     branches:
-      - main  # Adjust this according to your main branch name
+      - main
 
 jobs:
   build:
