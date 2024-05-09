@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function TimeInput() {
+function TimeInput({ onTimeInput }) {
   const [inputValue, setInputValue] = useState('');
   const [isValid, setIsValid] = useState(true);
 
@@ -33,6 +33,7 @@ function TimeInput() {
         .then(data => {
           // handle the response data
           console.log('Response:', data);
+          onTimeInput(totalSeconds); // Notify the parent component that a time has been entered
         })
         .catch(error => {
           console.error('Error:', error);
