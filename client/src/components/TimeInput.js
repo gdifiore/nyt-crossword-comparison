@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../App.css';
 
 function TimeInput({ onTimeInput }) {
   const [inputValue, setInputValue] = useState('');
@@ -45,10 +46,9 @@ function TimeInput({ onTimeInput }) {
   };
 
   return (
-    <div>
-      <h1>Time Measurement Input</h1>
+    <div className="time-input">
       <label>
-        Enter Time (m:ss):
+        Enter Your Time (m:ss):
         <input type="text" value={inputValue} onChange={handleInputChange} />
       </label>
       <button onClick={handleVerify}>Submit</button>

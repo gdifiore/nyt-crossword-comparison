@@ -36,3 +36,37 @@
     transform: rotate(360deg);
   }
 }
+
+body {
+  background-color: #f4f4f4;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  color: #333;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0 auto;
+  max-width: 800px;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+.time-input, .user-time, .chart {
+  margin-bottom: 20px;
+}
+
+.time-input input {
+  margin-left: 10px;
+}
+
+.user-time {
+  font-size: 1.2em;
+  font-weight: bold;
+}

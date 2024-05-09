@@ -16,4 +16,8 @@ def calculate_num_bins(data, min_bins=3, bin_size=10):
     """
     range_of_data = max(data) - min(data)
     num_bins = max(min_bins, range_of_data // bin_size)
+
+    max_bins = 15
+    num_bins = min(max_bins, num_bins)  # Ensure num_bins does not exceed max_bins
+
     return num_bins
