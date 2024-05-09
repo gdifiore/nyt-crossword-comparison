@@ -1,11 +1,11 @@
 # frontend
 - [x] send data from react to flask
 
-- [ ] switch state to prevent multiple input
+- [x] switch state to prevent multiple input
 
-- [ ] display data
+- [x] display data
 
-- [ ] switch react boilerplate
+- [x] switch react boilerplate
 
 # backend
 - [x] input data into db
