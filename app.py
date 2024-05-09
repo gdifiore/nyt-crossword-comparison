@@ -3,6 +3,10 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import psycopg2
 
+import math
+
+import utils
+
 app = Flask(__name__, static_folder="client/build", static_url_path="/")
 
 CORS(app)
@@ -16,7 +20,6 @@ def get_db_connection():
         password=os.environ["DATABASE_PASSWORD"],
     )
     return conn
-
 
 # Flask API endpoint
 @app.route("/api/data", methods=["GET", "POST"])
@@ -64,6 +67,44 @@ def print_db():
     conn.close()
     return jsonify({"times": formatted_times})
 
+@app.route('/api/chartData', methods=['GET'])
+def get_chart_data():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    sql_query = """
+    SELECT
+        completion_time_in_sec,
+        TO_CHAR((completion_time_in_sec / 60)::integer, 'FM999') || ':' || TO_CHAR(completion_time_in_sec % 60, 'FM00') AS formatted_time
+    FROM
+        puzzle_completion;
+                """
+    cur.execute(sql_query)
+    data = [x[0] for x in cur.fetchall()]
+    conn.close()
+
+    num_bins = utils.calculate_num_bins(data)
+    min_val = min(data)
+    max_val = max(data)
+    bin_width = (max_val - min_val) / num_bins
+
+    # initialize a list of dictionaries to hold the counts of values in each bin
+    # this is copilot voodoo
+    bins = [{"range": f"{math.floor(min_val + i*bin_width)}-{math.ceil(min_val + (i+1)*bin_width)}", "count": 0} for i in range(num_bins)]
+
+    # iterate over the data and increment the count for the appropriate bin
+    for value in data:
+        for b in bins:
+            low, high = map(float, b["range"].split('-'))
+            if low <= value <= high:
+                b["count"] += 1
+                break
+
+    # convert the range of each bin from seconds to "mm:ss"
+    for b in bins:
+        low, high = map(int, b["range"].split('-'))
+        b["range"] = f"{low//60}:{low%60:02d}-{high//60}:{high%60:02d}"
+
+    return jsonify({"data": bins})
 
 # Flask error handling
 @app.errorhandler(404)
