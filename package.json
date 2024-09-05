@@ -1,0 +1,11 @@
+{
+    "name": "nyt-crossword-comparison",
+    "version": "0.1.0",
+    "scripts": {
+      "start": "python app.py",
+      "heroku-postbuild": "cd client && npm install && npm run build"
+    },
+    "engines": {
+      "node": "14.x"
+    }
+  }
