@@ -16,5 +16,4 @@ Compare your scores with thousands of others
 
 With time
 
-
-GO TO GPT and ask it to update app.py according to using static build of node side
+**My GitHub student pack expired** so I don't want to pay to upload this to heroku or another web service. If anyone is interested in doing this I'd be happy to help.
