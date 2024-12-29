@@ -36,6 +36,30 @@ db_pool = SimpleConnectionPool(
     password=app.config["DATABASE_PASSWORD"],
 )
 
+# Database initialization
+def initialize_database():
+    table_name = "puzzle_completion"
+    create_table_query = f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id SERIAL PRIMARY KEY,
+        completion_time_in_sec INT,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """
+    try:
+        conn = db_pool.getconn()
+        with conn.cursor() as cur:
+            cur.execute(create_table_query)
+            conn.commit()
+        print(f"Table '{table_name}' initialized successfully.")
+    except psycopg2.Error as e:
+        print(f"Error during database initialization: {e}")
+    finally:
+        db_pool.putconn(conn)
+
+# Initialize database at startup
+initialize_database()
+
 # Database operations
 def execute_query(query: str, params: tuple = None) -> List[Dict]:
     conn = db_pool.getconn()
@@ -73,6 +97,9 @@ def get_chart_data():
 
 # Helper functions
 def calculate_bins(data: List[int]) -> List[Dict]:
+    if not data:
+        return []
+
     num_bins = utils.calculate_num_bins(data)
     min_val, max_val = min(data), max(data)
     bin_width = (max_val - min_val) / num_bins
@@ -111,10 +138,11 @@ def internal_server_error(error):
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve_react(path):
+    # Serve static files or fall back to index.html
     if path and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
     return send_from_directory(app.static_folder, "index.html")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host="0.0.0.0", port=port)
