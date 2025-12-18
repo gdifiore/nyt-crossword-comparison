@@ -149,11 +149,34 @@ def get_chart_data():
 
 # Helper functions
 def calculate_bins(data: List[int]) -> List[Dict]:
+    """
+    Calculate histogram bins for completion time data.
+
+    Args:
+        data: List of completion times in seconds
+
+    Returns:
+        List of bins with time ranges and counts
+
+    Edge cases handled:
+        - Empty data: returns empty list
+        - Single value: returns one bin with all data
+        - All same values: returns one bin with all data
+    """
     if not data:
         return []
 
-    num_bins = utils.calculate_num_bins(data)
     min_val, max_val = min(data), max(data)
+
+    # Handle case where all values are the same (would cause division by zero)
+    if min_val == max_val:
+        time_str = f"{min_val//60}:{min_val%60:02d}"
+        return [{
+            "range": f"{time_str}-{time_str}",
+            "count": len(data)
+        }]
+
+    num_bins = utils.calculate_num_bins(data)
     bin_width = (max_val - min_val) / num_bins
 
     bins = [
@@ -164,13 +187,23 @@ def calculate_bins(data: List[int]) -> List[Dict]:
         for i in range(num_bins)
     ]
 
+    # Assign values to bins using exclusive upper bound to prevent double-counting
     for value in data:
-        for b in bins:
+        for i, b in enumerate(bins):
             low, high = map(float, b["range"].split("-"))
-            if low <= value <= high:
-                b["count"] += 1
-                break
+            # Use exclusive upper bound for all bins except the last one
+            if i == len(bins) - 1:
+                # Last bin includes upper boundary
+                if low <= value <= high:
+                    b["count"] += 1
+                    break
+            else:
+                # Other bins exclude upper boundary
+                if low <= value < high:
+                    b["count"] += 1
+                    break
 
+    # Format time ranges as MM:SS
     for b in bins:
         low, high = map(int, b["range"].split("-"))
         b["range"] = f"{low//60}:{low%60:02d}-{high//60}:{high%60:02d}"
