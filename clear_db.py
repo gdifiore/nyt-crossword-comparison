@@ -1,9 +1,20 @@
 import os
+import sys
 import psycopg2
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# Validate required environment variables
+REQUIRED_ENV_VARS = ["DATABASE_HOST", "DATABASE_NAME", "DATABASE_USERNAME", "DATABASE_PASSWORD"]
+missing_vars = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
+if missing_vars:
+    print(f"ERROR: Missing required environment variables: {', '.join(missing_vars)}")
+    print("Please create a .env file with the following variables:")
+    for var in REQUIRED_ENV_VARS:
+        print(f"  {var}=<value>")
+    sys.exit(1)
 
 # Configuration
 DATABASE_HOST = os.getenv("DATABASE_HOST")

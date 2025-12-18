@@ -1,8 +1,12 @@
 import os
+import sys
 import math
 from typing import List, Dict
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.security import safe_join
 import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 from psycopg2.extras import RealDictCursor
@@ -13,6 +17,16 @@ import utils
 # Load environment variables
 load_dotenv()
 
+# Validate required environment variables
+REQUIRED_ENV_VARS = ["DATABASE_HOST", "DATABASE_NAME", "DATABASE_USERNAME", "DATABASE_PASSWORD"]
+missing_vars = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
+if missing_vars:
+    print(f"ERROR: Missing required environment variables: {', '.join(missing_vars)}")
+    print("Please create a .env file with the following variables:")
+    for var in REQUIRED_ENV_VARS:
+        print(f"  {var}=<value>")
+    sys.exit(1)
+
 # Configuration
 class Config:
     DATABASE_HOST = os.getenv("DATABASE_HOST")
@@ -20,11 +34,31 @@ class Config:
     DATABASE_USERNAME = os.getenv("DATABASE_USERNAME")
     DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
     DEBUG = os.getenv("FLASK_DEBUG", "False").lower() in ("true", "1", "t")
+    ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
+
+# Time validation constants (in seconds)
+MIN_COMPLETION_TIME = 10  # 10 seconds minimum
+MAX_COMPLETION_TIME = 900  # 15 minutes maximum
 
 # Initialize Flask app
 app = Flask(__name__, static_folder="client/build", static_url_path="/")
-CORS(app)
+
+# Configure CORS with specific origins
+if Config.ALLOWED_ORIGINS == "*":
+    CORS(app)
+else:
+    origins = [origin.strip() for origin in Config.ALLOWED_ORIGINS.split(",")]
+    CORS(app, origins=origins)
+
 app.config.from_object(Config)
+
+# Initialize rate limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 # Database connection pool
 db_pool = SimpleConnectionPool(
@@ -74,16 +108,34 @@ def execute_query(query: str, params: tuple = None) -> List[Dict]:
 
 # API routes
 @app.route("/api/data", methods=["POST"])
+@limiter.limit("1 per day")  # Only 1 submission per IP per day
 def insert_data():
     data = request.get_json()
     if not data or "secondsToComplete" not in data:
-        return jsonify({"error": "Invalid data"}), 400
+        return jsonify({"error": "Invalid data: missing secondsToComplete"}), 400
+
+    # Validate completion time
+    try:
+        completion_time = int(data["secondsToComplete"])
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid data: secondsToComplete must be an integer"}), 400
+
+    if completion_time < MIN_COMPLETION_TIME:
+        return jsonify({
+            "error": f"Invalid time: {completion_time} seconds is too fast. Minimum is {MIN_COMPLETION_TIME} seconds."
+        }), 400
+
+    if completion_time > MAX_COMPLETION_TIME:
+        return jsonify({
+            "error": f"Invalid time: {completion_time} seconds is too slow. Maximum is {MAX_COMPLETION_TIME} seconds (15 minutes)."
+        }), 400
 
     query = "INSERT INTO puzzle_completion (completion_time_in_sec) VALUES (%s)"
-    execute_query(query, (data["secondsToComplete"],))
+    execute_query(query, (completion_time,))
     return jsonify({"message": "Data received successfully"})
 
 @app.route("/api/chartData", methods=["GET"])
+@limiter.limit("10 per minute")  # Limit chart data fetches
 def get_chart_data():
     query = """
     SELECT completion_time_in_sec
@@ -139,8 +191,11 @@ def internal_server_error(error):
 @app.route("/<path:path>")
 def serve_react(path):
     # Serve static files or fall back to index.html
-    if path and os.path.exists(os.path.join(app.static_folder, path)):
-        return send_from_directory(app.static_folder, path)
+    # Use safe_join to prevent path traversal attacks
+    if path:
+        safe_path = safe_join(app.static_folder, path)
+        if safe_path and os.path.exists(safe_path):
+            return send_from_directory(app.static_folder, path)
     return send_from_directory(app.static_folder, "index.html")
 
 if __name__ == "__main__":
