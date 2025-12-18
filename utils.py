@@ -7,13 +7,23 @@ def calculate_num_bins(data, min_bins=3, bin_size=10):
     but it will be at least the minimum number of bins specified.
 
     Parameters:
-    data (list of int/float): The data to be binned.
+    data (list of int/float): The data to be binned. Must not be empty.
     min_bins (int, optional): The minimum number of bins. Default is 3.
-    bin_size (int, optional): The size of each bin. Default is 10.
+    bin_size (int, optional): The size of each bin in seconds. Default is 10.
 
     Returns:
-    num_bins (int): The number of bins.
+    num_bins (int): The number of bins (between min_bins and 15).
+
+    Raises:
+    ValueError: If data is empty.
+
+    Edge cases:
+    - If range of data is less than bin_size, returns min_bins
+    - Maximum bins is capped at 15 to prevent overcrowding
     """
+    if not data:
+        raise ValueError("Data cannot be empty")
+
     range_of_data = max(data) - min(data)
     num_bins = max(min_bins, range_of_data // bin_size)
 
