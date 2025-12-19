@@ -16,8 +16,11 @@ const App = () => {
 
   useEffect(() => {
     if (timeEntered) {
+      // Create AbortController to cancel fetch on unmount
+      const abortController = new AbortController();
+
       setIsLoading(true);
-      fetch('/api/chartData')
+      fetch('/api/chartData', { signal: abortController.signal })
         .then(response => {
           if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -29,15 +32,27 @@ const App = () => {
           setIsLoading(false);
         })
         .catch(error => {
+          // Ignore abort errors (expected on unmount)
+          if (error.name === 'AbortError') {
+            return;
+          }
           console.error('Error fetching chart data:', error);
           setError('Failed to load chart data. Please try again later.');
           setIsLoading(false);
         });
+
+      // Cleanup function to abort fetch if component unmounts
+      return () => {
+        abortController.abort();
+      };
     }
   }, [timeEntered]);
 
   const handleTimeInput = (time) => {
-    const formattedTime = `${Math.floor(time / 60)}:${time % 60 < 10 ? '0' : ''}${time % 60}`;
+    const minutes = Math.floor(time / 60);
+    const seconds = String(time % 60).padStart(2, '0');
+    const formattedTime = `${minutes}:${seconds}`;
+
     setUserTime(formattedTime);
     localStorage.setItem('userTime', formattedTime);
     setTimeEntered(true);
@@ -45,12 +60,19 @@ const App = () => {
     localStorage.setItem('date', currentDate);
   };
 
+  const handleTimeInputError = (errorMessage) => {
+    // Handle case where submission failed
+    setError(errorMessage);
+    // Don't update state - user can try again
+  };
+
   return (
     <div className="container">
       <h1>NYT Crossword Comparison</h1>
       {!timeEntered ? (
         <div className="time-input">
-          <TimeInput onTimeInput={handleTimeInput} />
+          <TimeInput onTimeInput={handleTimeInput} onError={handleTimeInputError} />
+          {error && <p className="error" role="alert">{error}</p>}
         </div>
       ) : (
         <>
