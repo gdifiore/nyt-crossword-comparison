@@ -1,6 +1,11 @@
 ### Locally
 [PostgreSQL on Linux](./postgresql.md)
 
+#### Requirements
+- Python 3.8 or higher
+- Node.js 14.x (specified in package.json)
+- PostgreSQL 12 or higher
+
 #### Set up Environment
 ```
 (in repository root dir)
@@ -10,11 +15,11 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Sample `.env` for app config
+Sample `.env` for app config (see `.env.example` for complete reference)
 ```
 # place in root directory with app.py
 DATABASE_HOST="localhost"
-DATABASE="nytcrosswordcomparison"
+DATABASE_NAME="nytcrosswordcomparison"
 DATABASE_USERNAME="postgres"
 DATABASE_PASSWORD="password"
 ```
@@ -25,7 +30,8 @@ DATABASE_PASSWORD="password"
 sudo apt install npm
 
 cd client/
-npm build
+npm install
+npm run build
 ```
 
 #### Start Website
