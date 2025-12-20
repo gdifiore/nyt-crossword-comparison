@@ -1,7 +1,8 @@
 import os
 import sys
 import math
-from typing import List, Dict
+import logging
+from typing import List, Dict, Optional, Union
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -13,6 +14,14 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
 import utils
+import config
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -21,6 +30,7 @@ load_dotenv()
 REQUIRED_ENV_VARS = ["DATABASE_HOST", "DATABASE_NAME", "DATABASE_USERNAME", "DATABASE_PASSWORD"]
 missing_vars = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
 if missing_vars:
+    logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
     print(f"ERROR: Missing required environment variables: {', '.join(missing_vars)}")
     print("Please create a .env file with the following variables:")
     for var in REQUIRED_ENV_VARS:
@@ -35,10 +45,6 @@ class Config:
     DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
     DEBUG = os.getenv("FLASK_DEBUG", "False").lower() in ("true", "1", "t")
     ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
-
-# Time validation constants (in seconds)
-MIN_COMPLETION_TIME = 10  # 10 seconds minimum
-MAX_COMPLETION_TIME = 900  # 15 minutes maximum
 
 # Initialize Flask app
 app = Flask(__name__, static_folder="client/build", static_url_path="/")
@@ -61,20 +67,32 @@ limiter = Limiter(
 )
 
 # Database connection pool
-db_pool = SimpleConnectionPool(
-    minconn=1,
-    maxconn=10,
-    host=app.config["DATABASE_HOST"],
-    database=app.config["DATABASE_NAME"],
-    user=app.config["DATABASE_USERNAME"],
-    password=app.config["DATABASE_PASSWORD"],
-)
+try:
+    db_pool = SimpleConnectionPool(
+        minconn=config.DB_POOL_MIN_CONN,
+        maxconn=config.DB_POOL_MAX_CONN,
+        host=app.config["DATABASE_HOST"],
+        database=app.config["DATABASE_NAME"],
+        user=app.config["DATABASE_USERNAME"],
+        password=app.config["DATABASE_PASSWORD"],
+    )
+    logger.info(f"Database connection pool created successfully (min={config.DB_POOL_MIN_CONN}, max={config.DB_POOL_MAX_CONN})")
+
+    # Test connection
+    test_conn = db_pool.getconn()
+    db_pool.putconn(test_conn)
+    logger.info("Database connection test successful")
+except psycopg2.Error as e:
+    logger.error(f"Failed to create database connection pool: {e}")
+    print(f"ERROR: Failed to connect to database: {e}")
+    print("Please check your database credentials and ensure PostgreSQL is running.")
+    sys.exit(1)
 
 # Database initialization
 def initialize_database():
-    table_name = "puzzle_completion"
+    """Initialize the database table if it doesn't exist."""
     create_table_query = f"""
-    CREATE TABLE IF NOT EXISTS {table_name} (
+    CREATE TABLE IF NOT EXISTS {config.TABLE_NAME} (
         id SERIAL PRIMARY KEY,
         completion_time_in_sec INT,
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -85,9 +103,10 @@ def initialize_database():
         with conn.cursor() as cur:
             cur.execute(create_table_query)
             conn.commit()
-        print(f"Table '{table_name}' initialized successfully.")
+        logger.info(f"Table '{config.TABLE_NAME}' initialized successfully")
     except psycopg2.Error as e:
-        print(f"Error during database initialization: {e}")
+        logger.error(f"Error during database initialization: {e}")
+        raise
     finally:
         db_pool.putconn(conn)
 
@@ -95,14 +114,37 @@ def initialize_database():
 initialize_database()
 
 # Database operations
-def execute_query(query: str, params: tuple = None) -> List[Dict]:
+def execute_query(query: str, params: tuple = None) -> Union[List[Dict], int]:
+    """
+    Execute a database query and return results or row count.
+
+    Args:
+        query: SQL query string
+        params: Query parameters tuple
+
+    Returns:
+        For SELECT queries: List of dictionaries with results
+        For INSERT/UPDATE/DELETE: Number of affected rows
+
+    Raises:
+        psycopg2.Error: If query execution fails
+    """
     conn = db_pool.getconn()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(query, params)
             if cur.description:
+                # SELECT query - return results
                 return cur.fetchall()
-            conn.commit()
+            else:
+                # INSERT/UPDATE/DELETE - commit and return rowcount
+                conn.commit()
+                rowcount = cur.rowcount
+                logger.info(f"Query executed successfully, {rowcount} row(s) affected")
+                return rowcount
+    except psycopg2.Error as e:
+        logger.error(f"Database query failed: {e}")
+        raise
     finally:
         db_pool.putconn(conn)
 
@@ -120,32 +162,48 @@ def insert_data():
     except (ValueError, TypeError):
         return jsonify({"error": "Invalid data: secondsToComplete must be an integer"}), 400
 
-    if completion_time < MIN_COMPLETION_TIME:
+    if completion_time < config.MIN_COMPLETION_TIME:
         return jsonify({
-            "error": f"Invalid time: {completion_time} seconds is too fast. Minimum is {MIN_COMPLETION_TIME} seconds."
+            "error": f"Invalid time: {completion_time} seconds is too fast. Minimum is {config.MIN_COMPLETION_TIME} seconds."
         }), 400
 
-    if completion_time > MAX_COMPLETION_TIME:
+    if completion_time > config.MAX_COMPLETION_TIME:
         return jsonify({
-            "error": f"Invalid time: {completion_time} seconds is too slow. Maximum is {MAX_COMPLETION_TIME} seconds (15 minutes)."
+            "error": f"Invalid time: {completion_time} seconds is too slow. Maximum is {config.MAX_COMPLETION_TIME} seconds (15 minutes)."
         }), 400
 
-    query = "INSERT INTO puzzle_completion (completion_time_in_sec) VALUES (%s)"
-    execute_query(query, (completion_time,))
-    return jsonify({"message": "Data received successfully"})
+    # Insert data and check success
+    try:
+        query = f"INSERT INTO {config.TABLE_NAME} (completion_time_in_sec) VALUES (%s)"
+        rows_affected = execute_query(query, (completion_time,))
+
+        if rows_affected != 1:
+            logger.warning(f"Expected 1 row to be inserted, but {rows_affected} were affected")
+            return jsonify({"error": "Failed to save data"}), 500
+
+        logger.info(f"Successfully inserted completion time: {completion_time}s")
+        return jsonify({"message": "Data received successfully"})
+    except psycopg2.Error as e:
+        logger.error(f"Database error while inserting data: {e}")
+        return jsonify({"error": "Failed to save data. Please try again."}), 500
 
 @app.route("/api/chartData", methods=["GET"])
 @limiter.limit("10 per minute")  # Limit chart data fetches
 def get_chart_data():
-    query = """
-    SELECT completion_time_in_sec
-    FROM puzzle_completion
-    """
-    result = execute_query(query)
-    data = [row["completion_time_in_sec"] for row in result]
+    try:
+        query = f"""
+        SELECT completion_time_in_sec
+        FROM {config.TABLE_NAME}
+        """
+        result = execute_query(query)
+        data = [row["completion_time_in_sec"] for row in result]
 
-    bins = calculate_bins(data)
-    return jsonify({"data": bins})
+        bins = calculate_bins(data)
+        logger.info(f"Chart data generated: {len(data)} data points, {len(bins)} bins")
+        return jsonify({"data": bins})
+    except Exception as e:
+        logger.error(f"Error generating chart data: {e}")
+        return jsonify({"error": "Failed to load chart data"}), 500
 
 # Helper functions
 def calculate_bins(data: List[int]) -> List[Dict]:
