@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import TimeInput from './components/TimeInput';
-import { BarH } from "react-roughviz";
 
 import './App.css';
 
@@ -83,13 +82,26 @@ const App = () => {
             <p aria-live="assertive" role="alert">{error}</p>
           ) : chartData.length > 0 ? (
             <div className="chart" aria-label="Histogram of crossword completion times">
-              <BarH
-                data={{
-                  labels: chartData.map(item => item.range),
-                  values: chartData.map(item => item.count)
-                }}
-                responsive={true}
-              />
+              <div className="bar-chart">
+                {chartData.map((item, index) => {
+                  const maxCount = Math.max(...chartData.map(d => d.count));
+                  const barWidth = (item.count / maxCount) * 100;
+                  return (
+                    <div key={index} className="bar-item">
+                      <div className="bar-label">{item.range}</div>
+                      <div className="bar-container">
+                        <div
+                          className="bar"
+                          style={{ width: `${barWidth}%` }}
+                          aria-label={`${item.range}: ${item.count} submissions`}
+                        >
+                          <span className="bar-count">{item.count}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ) : null}
         </>
