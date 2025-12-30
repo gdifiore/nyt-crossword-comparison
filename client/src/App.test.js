@@ -14,6 +14,9 @@ const localStorageMock = (() => {
     setItem: jest.fn((key, value) => {
       store[key] = value.toString();
     }),
+    removeItem: jest.fn((key) => {
+      delete store[key];
+    }),
     clear: jest.fn(() => {
       store = {};
     })
@@ -30,6 +33,7 @@ describe('App Component', () => {
     localStorageMock.clear();
     localStorageMock.getItem.mockClear();
     localStorageMock.setItem.mockClear();
+    localStorageMock.removeItem.mockClear();
   });
 
   describe('Initial Render', () => {
