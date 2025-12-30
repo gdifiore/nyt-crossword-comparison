@@ -2,6 +2,9 @@
 Shared configuration constants for the application.
 """
 
+# Application version
+VERSION = "0.0.1"
+
 # Database configuration
 TABLE_NAME = "puzzle_completion"
 DB_POOL_MIN_CONN = 1

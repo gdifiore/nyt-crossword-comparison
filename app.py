@@ -2,6 +2,7 @@ import os
 import sys
 import math
 import logging
+from datetime import datetime
 from typing import List, Dict, Optional, Union
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
@@ -90,6 +91,7 @@ try:
     test_conn = db_pool.getconn()
     db_pool.putconn(test_conn)
     logger.info("Database connection test successful")
+    logger.info(f"Application starting - Version {config.VERSION}")
 except psycopg2.Error as e:
     logger.error(f"Failed to create database connection pool: {e}")
     print(f"ERROR: Failed to connect to database: {e}")
@@ -164,20 +166,24 @@ def execute_query(query: str, params: tuple = None) -> Union[List[Dict], int]:
 @app.route("/api/data", methods=["POST"])
 @limiter.limit("1 per day")  # Only 1 submission per IP per day
 def insert_data():
+    start_time = datetime.now()
     data = request.get_json()
     if not data or "secondsToComplete" not in data:
+        logger.warning(f"Invalid request - missing data from {request.remote_addr}")
         return jsonify({"error": "Invalid data: missing secondsToComplete"}), 400
 
     # Validate completion time
     try:
         completion_time = int(data["secondsToComplete"])
     except (ValueError, TypeError):
+        logger.warning(f"Invalid data type from {request.remote_addr}: {data}")
         return (
             jsonify({"error": "Invalid data: secondsToComplete must be an integer"}),
             400,
         )
 
     if completion_time < config.MIN_COMPLETION_TIME:
+        logger.info(f"Time too fast from {request.remote_addr}: {completion_time}s")
         return (
             jsonify(
                 {
@@ -188,6 +194,7 @@ def insert_data():
         )
 
     if completion_time > config.MAX_COMPLETION_TIME:
+        logger.info(f"Time too slow from {request.remote_addr}: {completion_time}s")
         return (
             jsonify(
                 {
@@ -208,16 +215,20 @@ def insert_data():
             )
             return jsonify({"error": "Failed to save data"}), 500
 
-        logger.info(f"Successfully inserted completion time: {completion_time}s")
+        elapsed = (datetime.now() - start_time).total_seconds()
+        logger.info(
+            f"Successfully inserted completion time: {completion_time}s from {request.remote_addr} (took {elapsed:.3f}s)"
+        )
         return jsonify({"message": "Data received successfully"})
     except psycopg2.Error as e:
-        logger.error(f"Database error while inserting data: {e}")
+        logger.error(f"Database error while inserting data: {e}", exc_info=True)
         return jsonify({"error": "Failed to save data. Please try again."}), 500
 
 
 @app.route("/api/chartData", methods=["GET"])
 @limiter.limit("10 per minute")  # Limit chart data fetches
 def get_chart_data():
+    start_time = datetime.now()
     try:
         query = f"""
         SELECT completion_time_in_sec
@@ -227,10 +238,13 @@ def get_chart_data():
         data = [row["completion_time_in_sec"] for row in result]
 
         bins = calculate_bins(data)
-        logger.info(f"Chart data generated: {len(data)} data points, {len(bins)} bins")
+        elapsed = (datetime.now() - start_time).total_seconds()
+        logger.info(
+            f"Chart data generated: {len(data)} data points, {len(bins)} bins (took {elapsed:.3f}s)"
+        )
         return jsonify({"data": bins})
     except Exception as e:
-        logger.error(f"Error generating chart data: {e}")
+        logger.error(f"Error generating chart data: {e}", exc_info=True)
         return jsonify({"error": "Failed to load chart data"}), 500
 
 
@@ -295,6 +309,46 @@ def calculate_bins(data: List[int]) -> List[Dict]:
     return bins
 
 
+# Health check endpoint
+@app.route("/api/health")
+def health_check():
+    """
+    Health check endpoint for monitoring.
+    Returns service status and version information.
+    """
+    health_status = {
+        "status": "healthy",
+        "service": "nyt-crossword-comparison",
+        "version": config.VERSION,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+    # Test database connection
+    try:
+        conn = db_pool.getconn()
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+            cur.fetchone()
+        db_pool.putconn(conn)
+        health_status["database"] = "connected"
+
+        # Get pool stats
+        pool_stats = {
+            "min_connections": config.DB_POOL_MIN_CONN,
+            "max_connections": config.DB_POOL_MAX_CONN,
+        }
+        health_status["database_pool"] = pool_stats
+
+    except Exception as e:
+        logger.error(f"Health check database error: {e}")
+        health_status["status"] = "unhealthy"
+        health_status["database"] = "disconnected"
+        health_status["error"] = str(e)
+        return jsonify(health_status), 503
+
+    return jsonify(health_status), 200
+
+
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
@@ -303,6 +357,7 @@ def not_found(error):
 
 @app.errorhandler(500)
 def internal_server_error(error):
+    logger.error(f"Internal server error: {error}", exc_info=True)
     return jsonify({"error": "Internal server error"}), 500
 
 

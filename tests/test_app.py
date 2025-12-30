@@ -197,6 +197,48 @@ class TestGetChartDataEndpoint:
             assert "error" in data
 
 
+class TestHealthCheckEndpoint:
+    """Tests for /api/health endpoint."""
+
+    def test_health_check_success(self, client):
+        """Test health check endpoint returns healthy status."""
+        import config
+
+        with patch("app.db_pool") as mock_pool:
+            mock_conn = MagicMock()
+            mock_cursor = MagicMock()
+            mock_cursor.fetchone.return_value = (1,)
+            mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+            mock_pool.getconn.return_value = mock_conn
+
+            response = client.get("/api/health")
+
+            assert response.status_code == 200
+            data = json.loads(response.data)
+            assert data["status"] == "healthy"
+            assert data["service"] == "nyt-crossword-comparison"
+            assert data["version"] == config.VERSION
+            assert "timestamp" in data
+            assert data["database"] == "connected"
+            assert "database_pool" in data
+
+    def test_health_check_database_error(self, client):
+        """Test health check endpoint when database is down."""
+        import app as flask_app
+        import psycopg2
+
+        with patch.object(flask_app, "db_pool") as mock_pool:
+            mock_pool.getconn.side_effect = psycopg2.Error("Connection failed")
+
+            response = client.get("/api/health")
+
+            assert response.status_code == 503
+            data = json.loads(response.data)
+            assert data["status"] == "unhealthy"
+            assert data["database"] == "disconnected"
+            assert "error" in data
+
+
 class TestStaticFileServing:
     """Tests for React static file serving."""
 
