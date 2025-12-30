@@ -309,6 +309,77 @@ def calculate_bins(data: List[int]) -> List[Dict]:
     return bins
 
 
+# Analytics endpoint
+@app.route("/api/stats")
+def get_stats():
+    """
+    Get analytics and statistics from archived data.
+    Returns daily metrics and historical trends.
+    """
+    try:
+        # Get today's stats from current table
+        today_query = f"""
+        SELECT
+            COUNT(*) as count,
+            AVG(completion_time_in_sec) as avg_time,
+            MIN(completion_time_in_sec) as min_time,
+            MAX(completion_time_in_sec) as max_time
+        FROM {config.TABLE_NAME}
+        """
+        today_result = execute_query(today_query)
+        today_stats = dict(today_result[0]) if today_result else {}
+
+        # Get historical stats from archive table
+        archive_query = f"""
+        SELECT
+            archived_date,
+            COUNT(*) as count,
+            AVG(completion_time_in_sec) as avg_time,
+            MIN(completion_time_in_sec) as min_time,
+            MAX(completion_time_in_sec) as max_time
+        FROM {config.TABLE_NAME}_archive
+        GROUP BY archived_date
+        ORDER BY archived_date DESC
+        LIMIT 30
+        """
+        try:
+            archive_results = execute_query(archive_query)
+            historical_stats = [
+                {
+                    "date": str(row["archived_date"]),
+                    "count": row["count"],
+                    "avg_time": float(row["avg_time"]) if row["avg_time"] else 0,
+                    "min_time": row["min_time"],
+                    "max_time": row["max_time"],
+                }
+                for row in archive_results
+            ]
+        except psycopg2.Error:
+            # Archive table might not exist yet
+            historical_stats = []
+
+        stats = {
+            "today": {
+                "count": today_stats.get("count", 0),
+                "avg_time": (
+                    float(today_stats["avg_time"]) if today_stats.get("avg_time") else 0
+                ),
+                "min_time": today_stats.get("min_time", 0),
+                "max_time": today_stats.get("max_time", 0),
+            },
+            "historical": historical_stats,
+        }
+
+        logger.info(
+            f"Stats generated: {stats['today']['count']} today, "
+            f"{len(historical_stats)} historical days"
+        )
+        return jsonify(stats)
+    except Exception as e:
+        logger.error(f"Error generating stats: {e}", exc_info=True)
+        return jsonify({"error": "Failed to load statistics"}), 500
+
+
 # Health check endpoint
 @app.route("/api/health")
 def health_check():

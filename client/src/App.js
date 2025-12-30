@@ -20,9 +20,17 @@ const App = () => {
   const currentDate = new Date().toISOString().split('T')[0];
   const storedData = getStoredTimeData();
 
+  // Clear old localStorage data if date has changed
+  if (storedData.storedDate && storedData.storedDate !== currentDate) {
+    localStorage.removeItem('timeEntered');
+    localStorage.removeItem('userTime');
+    localStorage.removeItem('userTimeInSeconds');
+    localStorage.removeItem('date');
+  }
+
   const [chartData, setChartData] = useState([]);
   const [timeEntered, setTimeEntered] = useState(storedData.storedDate === currentDate && storedData.timeEntered);
-  const [userTime, setUserTime] = useState(storedData.userTime);
+  const [userTime, setUserTime] = useState(storedData.storedDate === currentDate ? storedData.userTime : null);
   const [userTimeInSeconds, setUserTimeInSeconds] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
