@@ -54,7 +54,10 @@ class Config:
 
 
 # Initialize Flask app
-app = Flask(__name__, static_folder="client/build", static_url_path="/")
+# Calculate path to client/build relative to project root
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATIC_FOLDER = os.path.join(BASE_DIR, "client", "build")
+app = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path="/")
 
 # Configure CORS with specific origins
 if Config.ALLOWED_ORIGINS == "*":
