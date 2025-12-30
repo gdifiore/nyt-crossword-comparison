@@ -3,13 +3,26 @@ import TimeInput from './components/TimeInput';
 
 import './App.css';
 
-const App = () => {
+// Helper function to get stored time data from localStorage
+const getStoredTimeData = () => {
   const storedDate = localStorage.getItem('date');
+  const timeEntered = localStorage.getItem('timeEntered');
+  const userTime = localStorage.getItem('userTime');
+
+  return {
+    storedDate,
+    timeEntered: timeEntered === 'true',
+    userTime
+  };
+};
+
+const App = () => {
   const currentDate = new Date().toISOString().split('T')[0];
+  const storedData = getStoredTimeData();
 
   const [chartData, setChartData] = useState([]);
-  const [timeEntered, setTimeEntered] = useState(storedDate === currentDate && localStorage.getItem('timeEntered') === 'true');
-  const [userTime, setUserTime] = useState(localStorage.getItem('userTime'));
+  const [timeEntered, setTimeEntered] = useState(storedData.storedDate === currentDate && storedData.timeEntered);
+  const [userTime, setUserTime] = useState(storedData.userTime);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
