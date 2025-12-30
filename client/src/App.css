@@ -121,3 +121,125 @@ h1 {
   margin-top: 8px;
   font-size: 0.9em;
 }
+
+/* Enhanced Chart Features */
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 20px;
+}
+
+.reset-button {
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s;
+}
+
+.reset-button:hover {
+  background-color: #e0e0e0;
+}
+
+.reset-confirm {
+  background-color: white;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.reset-confirm h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.reset-confirm-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.confirm-yes, .confirm-no {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: opacity 0.2s;
+}
+
+.confirm-yes {
+  background-color: #d32f2f;
+  color: white;
+}
+
+.confirm-yes:hover {
+  opacity: 0.9;
+}
+
+.confirm-no {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.confirm-no:hover {
+  opacity: 0.9;
+}
+
+/* Highlighted user bar */
+.user-bar {
+  background: linear-gradient(90deg, #2196F3 0%, #1976D2 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Skeleton loading */
+.loading-container {
+  text-align: center;
+}
+
+.skeleton-chart {
+  width: 100%;
+  max-width: 600px;
+  margin: 20px auto;
+}
+
+.skeleton-bar {
+  height: 32px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  margin-bottom: 12px;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Percentile and timezone info */
+.percentile-info {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #2196F3;
+  margin: 20px 0 10px 0;
+}
+
+.timezone-info {
+  font-size: 0.85em;
+  color: #666;
+  font-style: italic;
+  margin-top: 10px;
+}

@@ -23,8 +23,10 @@ const App = () => {
   const [chartData, setChartData] = useState([]);
   const [timeEntered, setTimeEntered] = useState(storedData.storedDate === currentDate && storedData.timeEntered);
   const [userTime, setUserTime] = useState(storedData.userTime);
+  const [userTimeInSeconds, setUserTimeInSeconds] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     if (timeEntered) {
@@ -66,7 +68,9 @@ const App = () => {
     const formattedTime = `${minutes}:${seconds}`;
 
     setUserTime(formattedTime);
+    setUserTimeInSeconds(time);
     localStorage.setItem('userTime', formattedTime);
+    localStorage.setItem('userTimeInSeconds', time.toString());
     setTimeEntered(true);
     localStorage.setItem('timeEntered', 'true');
     localStorage.setItem('date', currentDate);
@@ -78,6 +82,78 @@ const App = () => {
     // Don't update state - user can try again
   };
 
+  const handleResetTime = () => {
+    setShowResetConfirm(true);
+  };
+
+  const confirmReset = () => {
+    localStorage.removeItem('timeEntered');
+    localStorage.removeItem('userTime');
+    localStorage.removeItem('userTimeInSeconds');
+    localStorage.removeItem('date');
+    setTimeEntered(false);
+    setUserTime(null);
+    setUserTimeInSeconds(null);
+    setChartData([]);
+    setError(null);
+    setShowResetConfirm(false);
+  };
+
+  const cancelReset = () => {
+    setShowResetConfirm(false);
+  };
+
+  // Calculate percentile if we have user time and chart data
+  const calculatePercentile = () => {
+    if (!userTimeInSeconds || chartData.length === 0) return null;
+
+    let fasterCount = 0;
+    let totalCount = 0;
+
+    chartData.forEach(bin => {
+      const [low, high] = bin.range.split('-').map(timeStr => {
+        const [min, sec] = timeStr.split(':').map(Number);
+        return min * 60 + sec;
+      });
+
+      totalCount += bin.count;
+
+      // If the bin is entirely faster than user's time
+      if (high <= userTimeInSeconds) {
+        fasterCount += bin.count;
+      }
+      // If user's time falls within this bin, count half (approximation)
+      else if (low <= userTimeInSeconds && userTimeInSeconds <= high) {
+        fasterCount += Math.floor(bin.count / 2);
+      }
+    });
+
+    if (totalCount === 0) return null;
+
+    const percentile = Math.round((fasterCount / totalCount) * 100);
+    return 100 - percentile; // Flip to show "faster than X%"
+  };
+
+  // Determine if a bin contains the user's time
+  const isUserBin = (binRange) => {
+    if (!userTimeInSeconds) return false;
+
+    const [low, high] = binRange.split('-').map(timeStr => {
+      const [min, sec] = timeStr.split(':').map(Number);
+      return min * 60 + sec;
+    });
+
+    return low <= userTimeInSeconds && userTimeInSeconds <= high;
+  };
+
+  // Load user time in seconds from localStorage on mount
+  useEffect(() => {
+    const storedSeconds = localStorage.getItem('userTimeInSeconds');
+    if (storedSeconds) {
+      setUserTimeInSeconds(parseInt(storedSeconds, 10));
+    }
+  }, []);
+
   return (
     <div className="container">
       <h1>NYT Crossword Comparison</h1>
@@ -88,34 +164,71 @@ const App = () => {
         </div>
       ) : (
         <>
-          <p className="user-time" aria-live="polite">Your time: {userTime}</p>
-          {isLoading ? (
-            <p aria-live="polite">Loading chart data...</p>
-          ) : error ? (
-            <p aria-live="assertive" role="alert">{error}</p>
-          ) : chartData.length > 0 ? (
-            <div className="chart" aria-label="Histogram of crossword completion times">
-              <div className="bar-chart">
-                {chartData.map((item, index) => {
-                  const maxCount = Math.max(...chartData.map(d => d.count));
-                  const barWidth = (item.count / maxCount) * 100;
-                  return (
-                    <div key={index} className="bar-item">
-                      <div className="bar-label">{item.range}</div>
-                      <div className="bar-container">
-                        <div
-                          className="bar"
-                          style={{ width: `${barWidth}%` }}
-                          aria-label={`${item.range}: ${item.count} submissions`}
-                        >
-                          <span className="bar-count">{item.count}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+          <div className="results-header">
+            <p className="user-time" aria-live="polite">Your time: {userTime}</p>
+            <button className="reset-button" onClick={handleResetTime}>
+              Change my time
+            </button>
+          </div>
+
+          {showResetConfirm && (
+            <div className="reset-confirm" role="dialog" aria-labelledby="reset-title">
+              <h3 id="reset-title">Are you sure?</h3>
+              <p>This will clear your submitted time and let you enter a new one.</p>
+              <div className="reset-confirm-buttons">
+                <button onClick={confirmReset} className="confirm-yes">Yes, reset</button>
+                <button onClick={cancelReset} className="confirm-no">Cancel</button>
               </div>
             </div>
+          )}
+
+          {isLoading ? (
+            <div className="loading-container" aria-live="polite">
+              <div className="skeleton-chart">
+                <div className="skeleton-bar"></div>
+                <div className="skeleton-bar"></div>
+                <div className="skeleton-bar"></div>
+                <div className="skeleton-bar"></div>
+                <div className="skeleton-bar"></div>
+              </div>
+              <p>Loading chart data...</p>
+            </div>
+          ) : error ? (
+            <p aria-live="assertive" role="alert" className="error">{error}</p>
+          ) : chartData.length > 0 ? (
+            <>
+              <div className="chart" aria-label="Histogram of crossword completion times">
+                <div className="bar-chart">
+                  {chartData.map((item, index) => {
+                    const maxCount = Math.max(...chartData.map(d => d.count));
+                    const barWidth = (item.count / maxCount) * 100;
+                    const isHighlighted = isUserBin(item.range);
+                    return (
+                      <div key={index} className="bar-item">
+                        <div className="bar-label">{item.range}</div>
+                        <div className="bar-container">
+                          <div
+                            className={`bar ${isHighlighted ? 'user-bar' : ''}`}
+                            style={{ width: `${barWidth}%` }}
+                            aria-label={`${item.range}: ${item.count} submissions${isHighlighted ? ' (your time is in this range)' : ''}`}
+                          >
+                            <span className="bar-count">{item.count}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {calculatePercentile() !== null && (
+                <p className="percentile-info" aria-live="polite">
+                  You were faster than {calculatePercentile()}% of solvers today!
+                </p>
+              )}
+              <p className="timezone-info">
+                Times reset daily at midnight UTC. Your local time: {new Date().toLocaleTimeString()}
+              </p>
+            </>
           ) : null}
         </>
       )}
