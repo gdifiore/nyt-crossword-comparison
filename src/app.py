@@ -14,8 +14,8 @@ from psycopg2.pool import SimpleConnectionPool
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
-import utils
-import config
+from . import utils
+from . import config
 
 # Configure logging
 logging.basicConfig(

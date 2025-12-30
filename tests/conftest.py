@@ -31,11 +31,11 @@ def mock_database_connection():
 def app():
     """Create and configure a test Flask application."""
     # Clear sys.modules to force reimport
-    if "app" in sys.modules:
-        del sys.modules["app"]
+    if "src.app" in sys.modules:
+        del sys.modules["src.app"]
 
     # Import app module
-    import app as flask_app
+    import src.app as flask_app
 
     # Configure for testing
     flask_app.app.config["TESTING"] = True

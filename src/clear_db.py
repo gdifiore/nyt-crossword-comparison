@@ -5,7 +5,7 @@ from datetime import datetime
 import psycopg2
 from dotenv import load_dotenv
 
-import config
+from . import config
 
 # Configure logging
 logging.basicConfig(

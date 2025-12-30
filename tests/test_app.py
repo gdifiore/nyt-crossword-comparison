@@ -10,7 +10,7 @@ class TestCalculateBins:
     def test_empty_data(self, app):
         """Test calculate_bins with empty data."""
         with app.app_context():
-            import app as flask_app
+            import src.app as flask_app
 
             result = flask_app.calculate_bins([])
             assert result == []
@@ -18,7 +18,7 @@ class TestCalculateBins:
     def test_single_value(self, app):
         """Test calculate_bins with single value."""
         with app.app_context():
-            import app as flask_app
+            import src.app as flask_app
 
             result = flask_app.calculate_bins([123])
             assert len(result) == 1
@@ -28,7 +28,7 @@ class TestCalculateBins:
     def test_all_same_values(self, app):
         """Test calculate_bins when all values are identical."""
         with app.app_context():
-            import app as flask_app
+            import src.app as flask_app
 
             result = flask_app.calculate_bins([60, 60, 60, 60])
             assert len(result) == 1
@@ -38,7 +38,7 @@ class TestCalculateBins:
     def test_no_double_counting(self, app):
         """Test that values aren't double-counted at bin boundaries."""
         with app.app_context():
-            import app as flask_app
+            import src.app as flask_app
 
             # Create data that would expose boundary issues
             data = [10, 20, 30, 40, 50]
@@ -51,7 +51,7 @@ class TestCalculateBins:
     def test_time_formatting(self, app):
         """Test that time ranges are formatted as MM:SS."""
         with app.app_context():
-            import app as flask_app
+            import src.app as flask_app
 
             data = [65, 125]  # 1:05 and 2:05
             result = flask_app.calculate_bins(data)
@@ -70,7 +70,7 @@ class TestInsertDataEndpoint:
 
     def test_insert_valid_data(self, client):
         """Test inserting valid completion time."""
-        with patch("app.execute_query") as mock_query:
+        with patch("src.app.execute_query") as mock_query:
             mock_query.return_value = 1  # Simulate 1 row inserted
 
             response = client.post(
@@ -107,7 +107,7 @@ class TestInsertDataEndpoint:
 
     def test_time_too_fast(self, client):
         """Test with completion time below minimum."""
-        import config
+        import src.config as config
 
         response = client.post(
             "/api/data",
@@ -122,7 +122,7 @@ class TestInsertDataEndpoint:
 
     def test_time_too_slow(self, client):
         """Test with completion time above maximum."""
-        import config
+        import src.config as config
 
         response = client.post(
             "/api/data",
@@ -139,7 +139,7 @@ class TestInsertDataEndpoint:
         """Test handling of database errors."""
         import psycopg2
 
-        with patch("app.execute_query") as mock_query:
+        with patch("src.app.execute_query") as mock_query:
             mock_query.side_effect = psycopg2.Error("Database error")
 
             response = client.post(
@@ -158,7 +158,7 @@ class TestGetChartDataEndpoint:
 
     def test_get_chart_data(self, client):
         """Test getting chart data."""
-        with patch("app.execute_query") as mock_query:
+        with patch("src.app.execute_query") as mock_query:
             # Mock database response
             mock_query.return_value = [
                 {"completion_time_in_sec": 60},
@@ -175,7 +175,7 @@ class TestGetChartDataEndpoint:
 
     def test_get_chart_data_empty(self, client):
         """Test getting chart data when database is empty."""
-        with patch("app.execute_query") as mock_query:
+        with patch("src.app.execute_query") as mock_query:
             mock_query.return_value = []
 
             response = client.get("/api/chartData")
@@ -187,7 +187,7 @@ class TestGetChartDataEndpoint:
 
     def test_get_chart_data_error(self, client):
         """Test error handling in chart data endpoint."""
-        with patch("app.execute_query") as mock_query:
+        with patch("src.app.execute_query") as mock_query:
             mock_query.side_effect = Exception("Database error")
 
             response = client.get("/api/chartData")
@@ -202,9 +202,9 @@ class TestHealthCheckEndpoint:
 
     def test_health_check_success(self, client):
         """Test health check endpoint returns healthy status."""
-        import config
+        import src.config as config
 
-        with patch("app.db_pool") as mock_pool:
+        with patch("src.app.db_pool") as mock_pool:
             mock_conn = MagicMock()
             mock_cursor = MagicMock()
             mock_cursor.fetchone.return_value = (1,)
@@ -224,7 +224,7 @@ class TestHealthCheckEndpoint:
 
     def test_health_check_database_error(self, client):
         """Test health check endpoint when database is down."""
-        import app as flask_app
+        import src.app as flask_app
         import psycopg2
 
         with patch.object(flask_app, "db_pool") as mock_pool:

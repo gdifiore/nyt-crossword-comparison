@@ -1,6 +1,6 @@
 """Tests for utils.py functions."""
 import pytest
-import utils
+import src.utils as utils
 
 
 class TestCalculateNumBins:
@@ -22,7 +22,7 @@ class TestCalculateNumBins:
 
     def test_maximum_bins_cap(self):
         """Test that bins are capped at MAX_BINS."""
-        import config
+        import src.config as config
 
         # Create data with range > MAX_BINS * bin_size
         data = [0, 200]  # Range of 200 seconds

@@ -1,4 +1,4 @@
-import config
+from . import config
 
 
 def calculate_num_bins(data, min_bins=None, bin_size=None):
