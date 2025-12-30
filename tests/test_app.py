@@ -1,4 +1,5 @@
 """Tests for Flask application endpoints."""
+
 import json
 import pytest
 from unittest.mock import MagicMock, patch

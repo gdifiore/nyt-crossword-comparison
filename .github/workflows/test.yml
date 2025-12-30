@@ -137,7 +137,7 @@ jobs:
         DATABASE_PASSWORD: test_pass
       run: |
         # Run app in background
-        python app.py &
+        python -m src.app &
         APP_PID=$!
 
         # Wait for app to start

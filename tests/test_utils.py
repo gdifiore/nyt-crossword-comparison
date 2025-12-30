@@ -1,4 +1,5 @@
 """Tests for utils.py functions."""
+
 import pytest
 import src.utils as utils
 
