@@ -6,6 +6,7 @@ function TimeInput({ onTimeInput, onError }) {
   const [isValid, setIsValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const validateTime = (value) => {
     // Basic format validation: m:ss or mm:ss
@@ -20,17 +21,17 @@ function TimeInput({ onTimeInput, onError }) {
 
     // Reject 0:00
     if (totalSeconds === 0) {
-      return { valid: false, message: 'Time must be greater than 0:00' };
-    }
-
-    // Reject times over 15 minutes (900 seconds)
-    if (totalSeconds > 900) {
-      return { valid: false, message: 'Time must be 15:00 or less' };
+      return { valid: false, message: 'Invalid time! Please enter a valid completion time.' };
     }
 
     // Reject unrealistically fast times (under 10 seconds)
     if (totalSeconds < 10) {
-      return { valid: false, message: 'Time must be at least 0:10' };
+      return { valid: false, message: "Too fast! Times under 10 seconds aren't valid for NYT Mini." };
+    }
+
+    // Reject times over 15 minutes (900 seconds)
+    if (totalSeconds > 900) {
+      return { valid: false, message: 'Too slow! Are you sure it took over 15 minutes? Please double-check your time.' };
     }
 
     return { valid: true, totalSeconds };
@@ -78,8 +79,13 @@ function TimeInput({ onTimeInput, onError }) {
       }
 
       // Success - notify parent component
-      onTimeInput(totalSeconds);
+      setIsSuccess(true);
       setErrorMessage('');
+
+      // Show success message briefly before transitioning
+      setTimeout(() => {
+        onTimeInput(totalSeconds);
+      }, 800);
     } catch (error) {
       console.error('Error submitting time:', error);
       const errorMsg = error.message || 'Failed to submit time. Please try again.';
@@ -111,19 +117,27 @@ function TimeInput({ onTimeInput, onError }) {
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
           aria-invalid={!isValid}
-          aria-describedby="time-input-error"
-          disabled={isSubmitting}
-          placeholder="e.g., 1:23"
+          aria-describedby="time-input-error time-input-hint"
+          disabled={isSubmitting || isSuccess}
+          placeholder="e.g., 1:23 (between 0:10 and 15:00)"
         />
       </label>
       <button
         onClick={handleVerify}
-        disabled={!isValid || !inputValue || isSubmitting}
+        disabled={!isValid || !inputValue || isSubmitting || isSuccess}
         aria-label="Submit time"
       >
-        {isSubmitting ? 'Submitting...' : 'Submit'}
+        {isSuccess ? 'Submitted!' : isSubmitting ? 'Submitting...' : 'Submit'}
       </button>
-      {errorMessage && <p id="time-input-error" style={{ color: 'red' }}>{errorMessage}</p>}
+      {isSuccess && (
+        <p id="time-input-success" style={{ color: 'green', fontWeight: 'bold' }} role="status" aria-live="polite">
+          Time submitted successfully! Loading your results...
+        </p>
+      )}
+      {errorMessage && <p id="time-input-error" style={{ color: 'red' }} role="alert">{errorMessage}</p>}
+      <p id="time-input-hint" style={{ fontSize: '0.9em', color: '#666', marginTop: '0.5em' }}>
+        Please enter a time between 0:10 and 15:00
+      </p>
     </div>
   );
 }

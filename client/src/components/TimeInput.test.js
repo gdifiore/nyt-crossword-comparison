@@ -66,7 +66,7 @@ describe('TimeInput Component', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/time must be greater than 0:00/i)).toBeInTheDocument();
+        expect(screen.getByText(/invalid time/i)).toBeInTheDocument();
       });
     });
 
@@ -80,7 +80,7 @@ describe('TimeInput Component', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/time must be 15:00 or less/i)).toBeInTheDocument();
+        expect(screen.getByText(/too slow/i)).toBeInTheDocument();
       });
     });
 
@@ -94,13 +94,22 @@ describe('TimeInput Component', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/time must be at least 0:10/i)).toBeInTheDocument();
+        expect(screen.getByText(/too fast/i)).toBeInTheDocument();
       });
     });
   });
 
   describe('Form Submission', () => {
-    test('submits valid time successfully', async () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.runOnlyPendingTimers();
+      jest.useRealTimers();
+    });
+
+    test('submits valid time successfully and shows success message', async () => {
       const mockOnTimeInput = jest.fn();
       fetch.mockResolvedValueOnce({
         ok: true,
@@ -121,6 +130,13 @@ describe('TimeInput Component', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ secondsToComplete: 83 })
         });
+        expect(screen.getByText(/time submitted successfully/i)).toBeInTheDocument();
+      });
+
+      // Fast-forward past the success message delay
+      jest.advanceTimersByTime(800);
+
+      await waitFor(() => {
         expect(mockOnTimeInput).toHaveBeenCalledWith(83);
       });
     });
