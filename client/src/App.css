@@ -1,49 +1,14 @@
-.App {
-  text-align: center;
-}
+/* ===========================
+   NYT Mini Crossword Comparison
+   Clean Minimal Design - Version 2
+   =========================== */
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
+/* Global Styles */
 body {
-  background-color: #f4f4f4;
-  font-family: Arial, sans-serif;
-}
-
-h1 {
-  color: #333;
+  background: #fafafa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  min-height: 100vh;
+  color: #1a1a1a;
 }
 
 .container {
@@ -51,172 +16,305 @@ h1 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  margin: 0 auto;
-  max-width: 800px;
-  padding: 0 20px;
+  min-height: 100vh;
+  padding: 40px 20px;
   box-sizing: border-box;
 }
 
-.time-input, .user-time, .chart {
-  margin-bottom: 20px;
+/* Header */
+h1 {
+  color: #1a1a1a;
+  font-size: 2.5em;
+  font-weight: 600;
+  margin: 0 0 40px 0;
+  text-align: center;
+  letter-spacing: -0.8px;
+}
+
+/* Main Card Container */
+.results-header,
+.chart,
+.loading-container {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 700px;
+  margin-bottom: 24px;
+}
+
+.time-input {
+  background: white;
+  border-radius: 12px;
+  padding: 32px 40px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 24px;
+}
+
+/* Time Input Section */
+.time-input {
+  text-align: center;
+}
+
+.time-input label {
+  display: block;
+  font-size: 1em;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin-bottom: 8px;
 }
 
 .time-input input {
-  margin-left: 10px;
+  width: 160px;
+  padding: 10px 16px;
+  font-size: 1.1em;
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  margin-left: 12px;
+  text-align: center;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #1a1a1a;
 }
 
-.user-time {
-  font-size: 1.2em;
-  font-weight: bold;
+.time-input input:focus {
+  outline: none;
+  border-color: #1a1a1a;
 }
 
-.bar-chart {
-  width: 100%;
-  max-width: 600px;
-  margin: 20px auto;
+.time-input input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  color: #999;
 }
 
-.bar-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
+.time-input input[aria-invalid="true"] {
+  border-color: #dc2626;
 }
 
-.bar-label {
-  width: 100px;
-  text-align: right;
-  padding-right: 12px;
-  font-size: 0.9em;
-  color: #555;
-  flex-shrink: 0;
-}
-
-.bar-container {
-  flex: 1;
-  background-color: #e0e0e0;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.bar {
-  background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 8px;
-  transition: width 0.3s ease;
-  min-width: 30px;
-}
-
-.bar-count {
+.time-input button {
+  background: #1a1a1a;
   color: white;
-  font-weight: bold;
-  font-size: 0.9em;
+  border: none;
+  padding: 12px 36px;
+  font-size: 1em;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 16px;
 }
 
-.error {
-  color: #d32f2f;
-  margin-top: 8px;
-  font-size: 0.9em;
+.time-input button:hover:not(:disabled) {
+  background: #333;
 }
 
-/* Enhanced Chart Features */
+.time-input button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.time-input button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Time Input Messages */
+.time-input-hint {
+  font-size: 0.85em;
+  color: #999;
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.time-input-success {
+  color: #10b981;
+  font-weight: 600;
+  margin-top: 12px;
+  font-size: 0.95em;
+}
+
+.time-input-error {
+  color: #dc2626;
+  margin-top: 12px;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+/* Results Header */
 .results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  max-width: 600px;
-  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.user-time {
+  font-size: 1.4em;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
 }
 
 .reset-button {
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
+  background-color: white;
+  border: 1px solid #e5e5e5;
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 0.9em;
-  transition: background-color 0.2s;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s ease;
 }
 
 .reset-button:hover {
-  background-color: #e0e0e0;
+  background-color: #fafafa;
+  border-color: #d4d4d4;
+  color: #1a1a1a;
 }
 
+/* Reset Confirmation Dialog */
 .reset-confirm {
   background-color: white;
-  border: 2px solid #333;
-  border-radius: 8px;
-  padding: 20px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 28px;
   margin: 20px 0;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .reset-confirm h3 {
   margin-top: 0;
-  color: #333;
+  color: #1a1a1a;
+  font-size: 1.2em;
+  font-weight: 600;
+}
+
+.reset-confirm p {
+  color: #666;
+  line-height: 1.6;
 }
 
 .reset-confirm-buttons {
   display: flex;
   gap: 12px;
   justify-content: center;
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
-.confirm-yes, .confirm-no {
-  padding: 10px 20px;
+.confirm-yes,
+.confirm-no {
+  padding: 10px 24px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 1em;
-  transition: opacity 0.2s;
+  font-size: 0.95em;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .confirm-yes {
-  background-color: #d32f2f;
+  background-color: #1a1a1a;
   color: white;
 }
 
 .confirm-yes:hover {
-  opacity: 0.9;
+  background-color: #333;
 }
 
 .confirm-no {
-  background-color: #e0e0e0;
-  color: #333;
+  background-color: #f5f5f5;
+  color: #1a1a1a;
 }
 
 .confirm-no:hover {
-  opacity: 0.9;
+  background-color: #e5e5e5;
 }
 
-/* Highlighted user bar */
+/* Chart Section */
+.chart {
+  padding: 40px;
+}
+
+.bar-chart {
+  width: 100%;
+  margin: 0;
+}
+
+.bar-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.bar-label {
+  width: 100px;
+  text-align: right;
+  padding-right: 20px;
+  font-size: 0.9em;
+  font-weight: 500;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.bar-container {
+  flex: 1;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  overflow: hidden;
+  height: 36px;
+}
+
+.bar {
+  background: #10b981;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 12px;
+  transition: all 0.3s ease;
+  min-width: 50px;
+}
+
+.bar-count {
+  color: white;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+/* Highlighted User Bar */
 .user-bar {
-  background: linear-gradient(90deg, #2196F3 0%, #1976D2 100%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: #1a1a1a;
 }
 
-/* Skeleton loading */
+/* Loading States */
 .loading-container {
   text-align: center;
 }
 
+.loading-container p {
+  color: #666;
+  font-weight: 400;
+  margin-top: 20px;
+  font-size: 0.95em;
+}
+
 .skeleton-chart {
   width: 100%;
-  max-width: 600px;
-  margin: 20px auto;
+  margin: 0;
 }
 
 .skeleton-bar {
-  height: 32px;
-  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  height: 36px;
+  background: linear-gradient(90deg, #e5e5e5 25%, #f5f5f5 50%, #e5e5e5 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   border-radius: 4px;
 }
 
@@ -229,17 +327,73 @@ h1 {
   }
 }
 
-/* Percentile and timezone info */
+/* Info Text */
 .percentile-info {
-  font-size: 1.1em;
-  font-weight: bold;
-  color: #2196F3;
-  margin: 20px 0 10px 0;
+  font-size: 1.2em;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 32px 0 16px 0;
+  text-align: center;
+  padding: 20px;
+  background: #fafafa;
+  border-radius: 8px;
+  border-left: 3px solid #1a1a1a;
 }
 
 .timezone-info {
   font-size: 0.85em;
-  color: #666;
-  font-style: italic;
-  margin-top: 10px;
+  color: #999;
+  font-style: normal;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.error {
+  color: #dc2626;
+  margin-top: 12px;
+  font-size: 0.9em;
+  font-weight: 500;
+  background-color: #fef2f2;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border-left: 3px solid #dc2626;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.8em;
+    margin-bottom: 32px;
+  }
+
+  .time-input {
+    padding: 24px 20px;
+  }
+
+  .results-header,
+  .chart,
+  .loading-container {
+    padding: 28px 24px;
+  }
+
+  .bar-label {
+    width: 70px;
+    font-size: 0.8em;
+    padding-right: 12px;
+  }
+
+  .results-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .reset-button {
+    width: 100%;
+  }
+
+  .time-input input {
+    width: 160px;
+    font-size: 1em;
+  }
 }

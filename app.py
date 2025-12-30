@@ -306,6 +306,9 @@ def calculate_bins(data: List[int]) -> List[Dict]:
         low, high = map(int, b["range"].split("-"))
         b["range"] = f"{low//60}:{low%60:02d}-{high//60}:{high%60:02d}"
 
+    # Filter out empty bins to avoid cluttering the chart
+    bins = [b for b in bins if b["count"] > 0]
+
     return bins
 
 

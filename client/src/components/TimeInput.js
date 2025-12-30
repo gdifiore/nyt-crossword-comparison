@@ -38,7 +38,33 @@ function TimeInput({ onTimeInput, onError }) {
   };
 
   const handleInputChange = (event) => {
-    const value = event.target.value;
+    let value = event.target.value;
+
+    // Remove any non-digit characters except colon
+    value = value.replace(/[^\d:]/g, '');
+
+    // Auto-format the time input
+    if (!value.includes(':')) {
+      // No colon yet - auto-insert based on length
+      if (value.length === 3) {
+        // 3 digits: format as m:ss (e.g., "123" → "1:23")
+        value = value.slice(0, 1) + ':' + value.slice(1);
+      } else if (value.length >= 4) {
+        // 4+ digits: format as mm:ss (e.g., "1234" → "12:34")
+        value = value.slice(0, 2) + ':' + value.slice(2, 4);
+      }
+    } else {
+      // Already has colon - ensure proper format
+      const parts = value.split(':');
+      if (parts.length > 2) {
+        // Multiple colons - keep only first
+        value = parts[0] + ':' + parts.slice(1).join('');
+      }
+      // Limit to m:ss or mm:ss format
+      const [min, sec] = value.split(':');
+      value = min.slice(0, 2) + ':' + sec.slice(0, 2);
+    }
+
     setInputValue(value);
 
     // Simple format check for immediate feedback
@@ -107,7 +133,7 @@ function TimeInput({ onTimeInput, onError }) {
   };
 
   return (
-    <div className="time-input">
+    <>
       <label htmlFor="time-input">
         Enter Your Time (m:ss or mm:ss):
         <input
@@ -119,7 +145,6 @@ function TimeInput({ onTimeInput, onError }) {
           aria-invalid={!isValid}
           aria-describedby="time-input-error time-input-hint"
           disabled={isSubmitting || isSuccess}
-          placeholder="e.g., 1:23 (between 0:10 and 15:00)"
         />
       </label>
       <button
@@ -130,15 +155,15 @@ function TimeInput({ onTimeInput, onError }) {
         {isSuccess ? 'Submitted!' : isSubmitting ? 'Submitting...' : 'Submit'}
       </button>
       {isSuccess && (
-        <p id="time-input-success" style={{ color: 'green', fontWeight: 'bold' }} role="status" aria-live="polite">
+        <p id="time-input-success" className="time-input-success" role="status" aria-live="polite">
           Time submitted successfully! Loading your results...
         </p>
       )}
-      {errorMessage && <p id="time-input-error" style={{ color: 'red' }} role="alert">{errorMessage}</p>}
-      <p id="time-input-hint" style={{ fontSize: '0.9em', color: '#666', marginTop: '0.5em' }}>
+      {errorMessage && <p id="time-input-error" className="time-input-error" role="alert">{errorMessage}</p>}
+      <p id="time-input-hint" className="time-input-hint">
         Please enter a time between 0:10 and 15:00
       </p>
-    </div>
+    </>
   );
 }
 

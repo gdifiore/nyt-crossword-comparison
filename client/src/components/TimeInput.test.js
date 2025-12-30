@@ -50,7 +50,7 @@ describe('TimeInput Component', () => {
       render(<TimeInput onTimeInput={jest.fn()} />);
 
       const input = screen.getByLabelText(/enter your time/i);
-      fireEvent.change(input, { target: { value: '123' } });
+      fireEvent.change(input, { target: { value: 'abc' } });
 
       const submitButton = screen.getByRole('button', { name: /submit/i });
       expect(submitButton).toBeDisabled();
@@ -193,6 +193,66 @@ describe('TimeInput Component', () => {
         expect(screen.getByText(/network error/i)).toBeInTheDocument();
         expect(mockOnError).toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('Auto-formatting', () => {
+    test('auto-formats 3 digits to m:ss format', () => {
+      render(<TimeInput onTimeInput={jest.fn()} />);
+
+      const input = screen.getByLabelText(/enter your time/i);
+      fireEvent.change(input, { target: { value: '123' } });
+
+      expect(input.value).toBe('1:23');
+      expect(screen.getByRole('button', { name: /submit/i })).not.toBeDisabled();
+    });
+
+    test('auto-formats 4 digits to mm:ss format', () => {
+      render(<TimeInput onTimeInput={jest.fn()} />);
+
+      const input = screen.getByLabelText(/enter your time/i);
+      fireEvent.change(input, { target: { value: '1234' } });
+
+      expect(input.value).toBe('12:34');
+      expect(screen.getByRole('button', { name: /submit/i })).not.toBeDisabled();
+    });
+
+    test('removes non-digit characters except colon', () => {
+      render(<TimeInput onTimeInput={jest.fn()} />);
+
+      const input = screen.getByLabelText(/enter your time/i);
+      fireEvent.change(input, { target: { value: 'abc1def2ghi3' } });
+
+      expect(input.value).toBe('1:23');
+    });
+
+    test('handles multiple colons by keeping only the first', () => {
+      render(<TimeInput onTimeInput={jest.fn()} />);
+
+      const input = screen.getByLabelText(/enter your time/i);
+      fireEvent.change(input, { target: { value: '1:2:3' } });
+
+      expect(input.value).toBe('1:23');
+    });
+
+    test('limits input to mm:ss format', () => {
+      render(<TimeInput onTimeInput={jest.fn()} />);
+
+      const input = screen.getByLabelText(/enter your time/i);
+      fireEvent.change(input, { target: { value: '123:456' } });
+
+      expect(input.value).toBe('12:45');
+    });
+
+    test('allows manual colon entry', () => {
+      render(<TimeInput onTimeInput={jest.fn()} />);
+
+      const input = screen.getByLabelText(/enter your time/i);
+      fireEvent.change(input, { target: { value: '1:' } });
+      expect(input.value).toBe('1:');
+
+      fireEvent.change(input, { target: { value: '1:23' } });
+      expect(input.value).toBe('1:23');
     });
   });
 
