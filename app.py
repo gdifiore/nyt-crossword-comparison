@@ -18,8 +18,7 @@ import config
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,12 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Validate required environment variables
-REQUIRED_ENV_VARS = ["DATABASE_HOST", "DATABASE_NAME", "DATABASE_USERNAME", "DATABASE_PASSWORD"]
+REQUIRED_ENV_VARS = [
+    "DATABASE_HOST",
+    "DATABASE_NAME",
+    "DATABASE_USERNAME",
+    "DATABASE_PASSWORD",
+]
 missing_vars = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
 if missing_vars:
     logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
@@ -37,6 +41,7 @@ if missing_vars:
         print(f"  {var}=<value>")
     sys.exit(1)
 
+
 # Configuration
 class Config:
     DATABASE_HOST = os.getenv("DATABASE_HOST")
@@ -45,6 +50,7 @@ class Config:
     DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
     DEBUG = os.getenv("FLASK_DEBUG", "False").lower() in ("true", "1", "t")
     ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
+
 
 # Initialize Flask app
 app = Flask(__name__, static_folder="client/build", static_url_path="/")
@@ -63,7 +69,7 @@ limiter = Limiter(
     get_remote_address,
     app=app,
     default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"
+    storage_uri="memory://",
 )
 
 # Database connection pool
@@ -76,7 +82,9 @@ try:
         user=app.config["DATABASE_USERNAME"],
         password=app.config["DATABASE_PASSWORD"],
     )
-    logger.info(f"Database connection pool created successfully (min={config.DB_POOL_MIN_CONN}, max={config.DB_POOL_MAX_CONN})")
+    logger.info(
+        f"Database connection pool created successfully (min={config.DB_POOL_MIN_CONN}, max={config.DB_POOL_MAX_CONN})"
+    )
 
     # Test connection
     test_conn = db_pool.getconn()
@@ -87,6 +95,7 @@ except psycopg2.Error as e:
     print(f"ERROR: Failed to connect to database: {e}")
     print("Please check your database credentials and ensure PostgreSQL is running.")
     sys.exit(1)
+
 
 # Database initialization
 def initialize_database():
@@ -110,8 +119,10 @@ def initialize_database():
     finally:
         db_pool.putconn(conn)
 
+
 # Initialize database at startup
 initialize_database()
+
 
 # Database operations
 def execute_query(query: str, params: tuple = None) -> Union[List[Dict], int]:
@@ -148,6 +159,7 @@ def execute_query(query: str, params: tuple = None) -> Union[List[Dict], int]:
     finally:
         db_pool.putconn(conn)
 
+
 # API routes
 @app.route("/api/data", methods=["POST"])
 @limiter.limit("1 per day")  # Only 1 submission per IP per day
@@ -160,17 +172,30 @@ def insert_data():
     try:
         completion_time = int(data["secondsToComplete"])
     except (ValueError, TypeError):
-        return jsonify({"error": "Invalid data: secondsToComplete must be an integer"}), 400
+        return (
+            jsonify({"error": "Invalid data: secondsToComplete must be an integer"}),
+            400,
+        )
 
     if completion_time < config.MIN_COMPLETION_TIME:
-        return jsonify({
-            "error": f"Invalid time: {completion_time} seconds is too fast. Minimum is {config.MIN_COMPLETION_TIME} seconds."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "error": f"Invalid time: {completion_time} seconds is too fast. Minimum is {config.MIN_COMPLETION_TIME} seconds."
+                }
+            ),
+            400,
+        )
 
     if completion_time > config.MAX_COMPLETION_TIME:
-        return jsonify({
-            "error": f"Invalid time: {completion_time} seconds is too slow. Maximum is {config.MAX_COMPLETION_TIME} seconds (15 minutes)."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "error": f"Invalid time: {completion_time} seconds is too slow. Maximum is {config.MAX_COMPLETION_TIME} seconds (15 minutes)."
+                }
+            ),
+            400,
+        )
 
     # Insert data and check success
     try:
@@ -178,7 +203,9 @@ def insert_data():
         rows_affected = execute_query(query, (completion_time,))
 
         if rows_affected != 1:
-            logger.warning(f"Expected 1 row to be inserted, but {rows_affected} were affected")
+            logger.warning(
+                f"Expected 1 row to be inserted, but {rows_affected} were affected"
+            )
             return jsonify({"error": "Failed to save data"}), 500
 
         logger.info(f"Successfully inserted completion time: {completion_time}s")
@@ -186,6 +213,7 @@ def insert_data():
     except psycopg2.Error as e:
         logger.error(f"Database error while inserting data: {e}")
         return jsonify({"error": "Failed to save data. Please try again."}), 500
+
 
 @app.route("/api/chartData", methods=["GET"])
 @limiter.limit("10 per minute")  # Limit chart data fetches
@@ -204,6 +232,7 @@ def get_chart_data():
     except Exception as e:
         logger.error(f"Error generating chart data: {e}")
         return jsonify({"error": "Failed to load chart data"}), 500
+
 
 # Helper functions
 def calculate_bins(data: List[int]) -> List[Dict]:
@@ -229,10 +258,7 @@ def calculate_bins(data: List[int]) -> List[Dict]:
     # Handle case where all values are the same (would cause division by zero)
     if min_val == max_val:
         time_str = f"{min_val//60}:{min_val%60:02d}"
-        return [{
-            "range": f"{time_str}-{time_str}",
-            "count": len(data)
-        }]
+        return [{"range": f"{time_str}-{time_str}", "count": len(data)}]
 
     num_bins = utils.calculate_num_bins(data)
     bin_width = (max_val - min_val) / num_bins
@@ -268,14 +294,17 @@ def calculate_bins(data: List[int]) -> List[Dict]:
 
     return bins
 
+
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({"error": "Not found"}), 404
 
+
 @app.errorhandler(500)
 def internal_server_error(error):
     return jsonify({"error": "Internal server error"}), 500
+
 
 # Frontend routes
 @app.route("/", defaults={"path": ""})
@@ -288,6 +317,7 @@ def serve_react(path):
         if safe_path and os.path.exists(safe_path):
             return send_from_directory(app.static_folder, path)
     return send_from_directory(app.static_folder, "index.html")
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

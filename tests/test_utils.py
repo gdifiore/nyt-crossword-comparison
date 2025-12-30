@@ -23,6 +23,7 @@ class TestCalculateNumBins:
     def test_maximum_bins_cap(self):
         """Test that bins are capped at MAX_BINS."""
         import config
+
         # Create data with range > MAX_BINS * bin_size
         data = [0, 200]  # Range of 200 seconds
         num_bins = utils.calculate_num_bins(data)

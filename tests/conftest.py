@@ -8,14 +8,14 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Set test environment variables before any imports
-os.environ['DATABASE_HOST'] = 'localhost'
-os.environ['DATABASE_NAME'] = 'test_db'
-os.environ['DATABASE_USERNAME'] = 'test_user'
-os.environ['DATABASE_PASSWORD'] = 'test_pass'
-os.environ['TESTING'] = 'true'
+os.environ["DATABASE_HOST"] = "localhost"
+os.environ["DATABASE_NAME"] = "test_db"
+os.environ["DATABASE_USERNAME"] = "test_user"
+os.environ["DATABASE_PASSWORD"] = "test_pass"
+os.environ["TESTING"] = "true"
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def mock_database_connection():
     """Mock database connection for all tests."""
     mock_pool = MagicMock()
@@ -23,7 +23,7 @@ def mock_database_connection():
     mock_pool.getconn.return_value = mock_conn
     mock_pool.putconn.return_value = None
 
-    with patch('psycopg2.pool.SimpleConnectionPool', return_value=mock_pool):
+    with patch("psycopg2.pool.SimpleConnectionPool", return_value=mock_pool):
         yield mock_pool
 
 
@@ -31,15 +31,15 @@ def mock_database_connection():
 def app():
     """Create and configure a test Flask application."""
     # Clear sys.modules to force reimport
-    if 'app' in sys.modules:
-        del sys.modules['app']
+    if "app" in sys.modules:
+        del sys.modules["app"]
 
     # Import app module
     import app as flask_app
 
     # Configure for testing
-    flask_app.app.config['TESTING'] = True
-    flask_app.app.config['WTF_CSRF_ENABLED'] = False
+    flask_app.app.config["TESTING"] = True
+    flask_app.app.config["WTF_CSRF_ENABLED"] = False
 
     # Disable rate limiting for tests
     flask_app.limiter.enabled = False

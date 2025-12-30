@@ -9,8 +9,7 @@ import config
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,12 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Validate required environment variables
-REQUIRED_ENV_VARS = ["DATABASE_HOST", "DATABASE_NAME", "DATABASE_USERNAME", "DATABASE_PASSWORD"]
+REQUIRED_ENV_VARS = [
+    "DATABASE_HOST",
+    "DATABASE_NAME",
+    "DATABASE_USERNAME",
+    "DATABASE_PASSWORD",
+]
 missing_vars = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
 if missing_vars:
     logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
@@ -33,6 +37,7 @@ DATABASE_HOST = os.getenv("DATABASE_HOST")
 DATABASE_NAME = os.getenv("DATABASE_NAME")
 DATABASE_USERNAME = os.getenv("DATABASE_USERNAME")
 DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
+
 
 # Clear database function
 def clear_database():
@@ -61,7 +66,9 @@ def clear_database():
             conn.commit()
 
         timestamp = datetime.now().isoformat()
-        logger.info(f"Database table '{config.TABLE_NAME}' cleared successfully at {timestamp}. Deleted {rows_deleted} row(s)")
+        logger.info(
+            f"Database table '{config.TABLE_NAME}' cleared successfully at {timestamp}. Deleted {rows_deleted} row(s)"
+        )
         print(f"Database table '{config.TABLE_NAME}' cleared successfully.")
         print(f"Deleted {rows_deleted} row(s) at {timestamp}")
     except psycopg2.Error as e:
@@ -71,6 +78,7 @@ def clear_database():
     finally:
         conn.close()
         logger.info("Database connection closed")
+
 
 if __name__ == "__main__":
     clear_database()
